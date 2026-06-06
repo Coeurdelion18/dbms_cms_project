@@ -18,9 +18,9 @@ if "user_id" not in st.session_state:
 
             else:
                 st.error("Invalid credentials")
-    with col2:
-        if st.button("Sign Up"):
-            st.switch_page("pages/signup.py")
+    # with col2:
+    #     if st.button("Sign Up"):
+    #         st.switch_page("pages/signup.py")
 
     st.stop()
 
@@ -38,12 +38,19 @@ admin_pages = [
     # st.Page("pages/admin_grades.py", title="Upload Grades"),
 ]
 
+instructor_pages = [
+    st.Page("pages/instructor_dashboard.py", title="Instructor Dashboard")
+]
+
 
 role = st.session_state.get("role")
 if role == "student":
     nav = st.navigation(student_pages)
 
-else:
+elif role == "admin":
     nav = st.navigation(admin_pages)
+
+elif role == "instructor":
+    nav = st.navigation(instructor_pages)
 
 nav.run()

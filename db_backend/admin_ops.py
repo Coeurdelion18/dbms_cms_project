@@ -7,190 +7,435 @@
 from db_backend.connection import get_connection
 from db_backend.auth_ops import hash_password
 
-def create_assignment(course_code, title:str, due_date:str, max_marks:int):
-    conn = get_connection()
-    lookup_query = """
-        SELECT course_id FROM courses WHERE course_code = %s
-    """
-    query = """
-        INSERT INTO assignments(course_id, title, due_date, max_marks) VALUES (%s, %s, %s, %s)
-    """
-    try:
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.execute(lookup_query, (course_code,))
-            row = cursor.fetchone()
-            if row is None:
-                raise ValueError("Course not found")
-            course_id = row["course_id"]
-            cursor.execute(query, (course_id, title, due_date, max_marks))
-            assignment_id = cursor.lastrowid
-        conn.commit()
-        return assignment_id
-    except Exception:
-        conn.rollback()
-        raise
-
-def upload_grade(student_id: int, assignment_id: int, marks_obtained: int):
-    conn = get_connection()
-    validation_query = """
-        SELECT A.assignment_id FROM assignments A JOIN enrollments E ON A.course_id = E.course_id WHERE A.assignment_id = %s AND E.student_id = %s
-    """
-    insert_query = """
-        INSERT INTO grades(assignment_id, student_id, marks_obtained) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE marks_obtained=VALUES(marks_obtained)
-    """
-    try:
-        with conn.cursor() as cursor:
-            # Step 1: Validate enrollment
-            cursor.execute(
-                validation_query,
-                (assignment_id, student_id)
-            )
-            row = cursor.fetchone()
-            if row is None:
-                raise ValueError(
-                    "Student not enrolled in assignment course"
-                )
-
-            # Step 2: Insert grade
-            cursor.execute(
-                insert_query,
-                (assignment_id,
-                 student_id,
-                 marks_obtained)
-            )
-            grade_id = cursor.lastrowid
-        conn.commit()
-        return grade_id
-
-    except Exception:
-        conn.rollback()
-        raise
 
 def create_admin_profile(user_name, email, password):
     conn = get_connection()
-    query = "INSERT INTO users(user_name, email, password_hash, user_role) VALUES(%s,%s,%s,'admin')"
+
+    query = """
+        INSERT INTO users(user_name, email, password_hash, user_role)
+        VALUES(%s, %s, %s, 'admin')
+    """
+
     password_hash = hash_password(password)
+
     try:
         with conn.cursor() as cursor:
-            cursor.execute(query,(user_name,email,password_hash))
+            cursor.execute(
+                query,
+                (
+                    user_name,
+                    email,
+                    password_hash
+                )
+            )
+
             admin_id = cursor.lastrowid
+
         conn.commit()
         return admin_id
+
     except Exception:
         conn.rollback()
         raise
 
-def create_course(instructor_name, course_code, title, credits):
+
+def create_student_account(
+    user_name,
+    email,
+    password,
+    student_year,
+    major
+):
     conn = get_connection()
-    query = "INSERT INTO courses(instructor_name, course_code, title, credits) VALUES(%s,%s,%s,%s)"
+
+    user_query = """
+        INSERT INTO users(user_name, email, password_hash, user_role)
+        VALUES(%s, %s, %s, 'student')
+    """
+
+    student_query = """
+        INSERT INTO students
+        (
+            student_id,
+            student_name,
+            student_year,
+            major
+        )
+        VALUES
+        (
+            %s,
+            %s,
+            %s,
+            %s
+        )
+    """
+
+    password_hash = hash_password(password)
+
     try:
         with conn.cursor() as cursor:
-            cursor.execute(query,(instructor_name,course_code,title,credits))
+            cursor.execute(
+                user_query,
+                (
+                    user_name,
+                    email,
+                    password_hash
+                )
+            )
+
+            student_id = cursor.lastrowid
+
+            cursor.execute(
+                student_query,
+                (
+                    student_id,
+                    user_name,
+                    student_year,
+                    major
+                )
+            )
+
+        conn.commit()
+        return student_id
+
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def create_instructor_account(
+    user_name,
+    email,
+    password,
+    instructor_name=None
+):
+    conn = get_connection()
+
+    user_query = """
+        INSERT INTO users(user_name, email, password_hash, user_role)
+        VALUES(%s, %s, %s, 'instructor')
+    """
+
+    instructor_query = """
+        INSERT INTO instructors
+        (
+            instructor_id,
+            instructor_name
+        )
+        VALUES
+        (
+            %s,
+            %s
+        )
+    """
+
+    password_hash = hash_password(password)
+
+    if instructor_name is None:
+        instructor_name = user_name
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                user_query,
+                (
+                    user_name,
+                    email,
+                    password_hash
+                )
+            )
+
+            instructor_id = cursor.lastrowid
+
+            cursor.execute(
+                instructor_query,
+                (
+                    instructor_id,
+                    instructor_name
+                )
+            )
+
+        conn.commit()
+        return instructor_id
+
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def create_course(
+    course_code,
+    title,
+    credits
+):
+    conn = get_connection()
+
+    query = """
+        INSERT INTO courses
+        (
+            course_code,
+            title,
+            credits
+        )
+        VALUES
+        (
+            %s,
+            %s,
+            %s
+        )
+    """
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query,
+                (
+                    course_code,
+                    title,
+                    credits
+                )
+            )
+
             course_id = cursor.lastrowid
+
         conn.commit()
         return course_id
+
     except Exception:
         conn.rollback()
         raise
 
-def assign_course_grade(student_id:int, course_code:str, grade:str):
+
+def create_course_offering(
+    instructor_id,
+    course_id,
+    offering_year,
+    semester,
+    max_seats
+):
     conn = get_connection()
-    lookup_query = "SELECT course_id FROM courses WHERE course_code=%s"
-    insert_query = "INSERT INTO course_grades(grade,course_id,student_id) VALUES(%s,%s,%s) ON DUPLICATE KEY UPDATE grade=VALUES(grade)"
+
+    query = """
+        INSERT INTO course_offerings
+        (
+            instructor_id,
+            course_id,
+            offering_year,
+            semester,
+            max_seats
+        )
+        VALUES
+        (
+            %s,
+            %s,
+            %s,
+            %s,
+            %s
+        )
+    """
+
     try:
-        with conn.cursor(dictionary=True) as cursor:
-            cursor.execute(lookup_query,(course_code,))
-            row = cursor.fetchone()
-            if row is None:
-                raise ValueError("Course not found")
-            course_id = row["course_id"]
-            cursor.execute(insert_query,(grade,course_id,student_id))
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query,
+                (
+                    instructor_id,
+                    course_id,
+                    offering_year,
+                    semester,
+                    max_seats
+                )
+            )
+
+            offering_id = cursor.lastrowid
+
         conn.commit()
+        return offering_id
+
     except Exception:
         conn.rollback()
         raise
 
 
-def view_course_roster(course_code:str):
+def view_course_roster(offering_id):
     conn = get_connection()
-    query = "SELECT S.student_id, U.user_name,U.email,S.student_year,S.major FROM enrollments E JOIN students S ON E.student_id=S.student_id JOIN users U ON U.user_id=S.student_id JOIN courses C ON C.course_id=E.course_id WHERE C.course_code=%s"
+
+    query = """
+        SELECT
+            S.student_id,
+            U.user_name,
+            U.email,
+            S.student_year,
+            S.major
+        FROM enrollments E
+        JOIN students S
+            ON E.student_id = S.student_id
+        JOIN users U
+            ON U.user_id = S.student_id
+        WHERE E.offering_id = %s
+    """
+
     with conn.cursor(dictionary=True) as cursor:
-        cursor.execute(query,(course_code,))
+        cursor.execute(
+            query,
+            (offering_id,)
+        )
+
         return cursor.fetchall()
 
 
-def get_course_details(course_code: str):
+def get_course_details(offering_id):
     conn = get_connection()
+
     query = """
         SELECT
-            C.course_code, C.title, C.credits, C.instructor_name, COUNT(DISTINCT A.assignment_id) AS assignment_count, COUNT(DISTINCT E.student_id) AS enrollment_count, AVG(CASE WHEN CG.grade IS NOT NULL THEN 1 ELSE NULL END) AS has_grades_ratio
-        FROM courses C
-        LEFT JOIN assignments A
-            ON C.course_id = A.course_id
-        LEFT JOIN enrollments E
-            ON C.course_id = E.course_id
-        LEFT JOIN course_grades CG
-            ON C.course_id = CG.course_id
-        WHERE C.course_code = %s
-        GROUP BY
             C.course_code,
             C.title,
             C.credits,
-            C.instructor_name
+            I.instructor_name,
+            CO.offering_year,
+            CO.semester,
+            COUNT(DISTINCT A.assignment_id) AS assignment_count,
+            COUNT(DISTINCT E.student_id) AS enrollment_count
+        FROM course_offerings CO
+        JOIN courses C
+            ON CO.course_id = C.course_id
+        JOIN instructors I
+            ON CO.instructor_id = I.instructor_id
+        LEFT JOIN assignments A
+            ON CO.offering_id = A.offering_id
+        LEFT JOIN enrollments E
+            ON CO.offering_id = E.offering_id
+        WHERE CO.offering_id = %s
+        GROUP BY
+            CO.offering_id,
+            C.course_code,
+            C.title,
+            C.credits,
+            I.instructor_name,
+            CO.offering_year,
+            CO.semester
     """
+
     with conn.cursor(dictionary=True) as cursor:
-        cursor.execute(query, (course_code,))
+        cursor.execute(
+            query,
+            (offering_id,)
+        )
+
         row = cursor.fetchone()
+
         if row is None:
-            raise ValueError("Course not found")
+            raise ValueError("Offering not found")
+
         return row
 
 
-def update_assignment(assignment_id:int, title:str, due_date:str, max_marks:int):
-    conn = get_connection()
-    query = "UPDATE assignments SET title=%s,due_date=%s,max_marks=%s WHERE assignment_id=%s"
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(query,(title,due_date,max_marks,assignment_id))
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-
-def delete_assignment(assignment_id:int):
-    conn = get_connection()
-    query = "DELETE FROM assignments WHERE assignment_id=%s"
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute(query,(assignment_id,))
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-
 def view_all_students():
     conn = get_connection()
+
     query = """
-        SELECT S.student_id, U.user_name FROM students S JOIN users U ON S.student_id = U.user_id
+        SELECT
+            S.student_id,
+            U.user_name
+        FROM students S
+        JOIN users U
+            ON S.student_id = U.user_id
     """
+
     with conn.cursor(dictionary=True) as cursor:
         cursor.execute(query)
         return cursor.fetchall()
-    
+
+
+def view_all_instructors():
+    conn = get_connection()
+
+    query = """
+        SELECT
+            I.instructor_id,
+            I.instructor_name
+        FROM instructors I
+    """
+
+    with conn.cursor(dictionary=True) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def view_all_courses():
+    conn = get_connection()
+
+    query = """
+        SELECT
+            course_id,
+            course_code,
+            title,
+            credits
+        FROM courses
+    """
+
+    with conn.cursor(dictionary=True) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
+def view_all_course_offerings():
+    conn = get_connection()
+
+    query = """
+        SELECT
+            CO.offering_id,
+            C.course_code,
+            C.title,
+            I.instructor_name,
+            CO.offering_year,
+            CO.semester,
+            CO.max_seats
+        FROM course_offerings CO
+        JOIN courses C
+            ON CO.course_id = C.course_id
+        JOIN instructors I
+            ON CO.instructor_id = I.instructor_id
+    """
+
+    with conn.cursor(dictionary=True) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+
+
 def view_all_assignments():
     conn = get_connection()
+
     query = """
-        SELECT assignment_id FROM assignments
+        SELECT
+            assignment_id,
+            title
+        FROM assignments
     """
+
     with conn.cursor(dictionary=True) as cursor:
         cursor.execute(query)
         return cursor.fetchall()
-    
-def view_course_assignments(course_code):
+
+
+def view_course_assignments(offering_id):
     conn = get_connection()
+
     query = """
-        SELECT A.assignment_id, A.title, A.due_date, A.max_marks FROM assignments A JOIN courses C ON A.course_id = C.course_id WHERE C.course_code = %s
+        SELECT
+            assignment_id,
+            title,
+            due_date,
+            max_marks
+        FROM assignments
+        WHERE offering_id = %s
     """
+
     with conn.cursor(dictionary=True) as cursor:
-        cursor.execute(query, (course_code,))
+        cursor.execute(
+            query,
+            (offering_id,)
+        )
+
         return cursor.fetchall()

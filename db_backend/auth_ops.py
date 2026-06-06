@@ -4,12 +4,12 @@ import bcrypt
 def hash_password(password: str):
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
-    #return hashed.decode("utf-8")
-    return password
+    return hashed.decode("utf-8")
+    #return password
 
 def verify_password(password, stored_hash):
-    #return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
-    return password == stored_hash
+    return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+    #return password == stored_hash
 
 def authenticate_user(email: str, password: str):
     conn = get_connection()
