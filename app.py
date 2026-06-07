@@ -33,6 +33,8 @@ student_pages = [
 
 admin_pages = [
     st.Page("pages/admin_dashboard.py", title="Admin Dashboard"),
+    st.Page("pages/mass_instructor_creation.py", title="Bulk Instructor Profile Creation"),
+    st.Page("pages/mass_student_creation.py", title="Bulk Student Profile Creation")
     # st.Page("pages/admin_courses.py", title="Courses"),
     # st.Page("pages/admin_assignments.py", title="Assignments"),
     # st.Page("pages/admin_grades.py", title="Upload Grades"),

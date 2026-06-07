@@ -25,6 +25,69 @@ if st.sidebar.button("Logout"):
 
 st.title("Admin Dashboard")
 
+# CREATE INSTRUCTOR PROFILE
+
+st.subheader("Create Instructor Profile")
+mass_instructor_button = st.button("Click for bulk upload", key="bulk_instructor_button")
+
+if mass_instructor_button:
+    st.switch_page("pages/mass_instructor_creation.py")
+
+with st.form("create_instructor_form"):
+    instructor_name = st.text_input("Instructor Name")
+    instructor_username = st.text_input("Instructor Username")
+    instructor_email = st.text_input("Instructor Email")
+    instructor_password = st.text_input("Temporary Password")
+    submit_instructor = st.form_submit_button("Create Instructor Profile")
+
+    if submit_instructor:
+        try:
+            admin_ops.create_instructor_account(
+                instructor_username, 
+                instructor_email,
+                instructor_password,
+                instructor_name 
+            )
+            st.success("Instructor profile created successfully")
+            st.rerun()
+        
+        except Exception as e:
+            st.error(str(e))
+
+# CREATE STUDENT PROFILE
+
+st.subheader("Create Student Profile")
+mass_student_button = st.button("Click for bulk upload", key="bulk_student_button")
+
+if mass_student_button:
+    st.switch_page("pages/mass_student_creation.py")
+
+with st.form("create_student_form"):
+    student_name = st.text_input("Student Name")
+    student_id = st.text_input("Student ID")
+    student_year = st.number_input("Student Year of Entry", step=1)
+    student_major = st.text_input("Student Major")
+    student_username = st.text_input("Student Username")
+    student_email = st.text_input("Student Email")
+    student_password = st.text_input("Student Password")
+    submit_student = st.form_submit_button("Create Student Profile")
+
+    if submit_student:
+        try:
+            admin_ops.create_student_account(
+                student_name,
+                student_username,
+                student_id, 
+                student_email,
+                student_password,
+                student_year,
+                student_major 
+            )
+            st.success("Student profile created successfully")
+            st.rerun()
+        
+        except Exception as e:
+            st.error(str(e))
 
 # CREATE COURSE
 
@@ -45,6 +108,7 @@ with st.form("create_course_form"):
         except Exception as e:
             st.error(str(e))
 
+# UPDATE COURSE
 
 # VIEW COURSE DETAILS
 
