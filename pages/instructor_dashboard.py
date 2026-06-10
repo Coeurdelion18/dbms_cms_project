@@ -144,6 +144,10 @@ else:
 # ---------- UPLOAD GRADES ----------
 
 st.subheader("Upload Assignment Marks")
+bulk_marks_button = st.button("Click for bulk upload", key="mass_marks_upload")
+
+if bulk_marks_button:
+    st.switch_page("pages/bulk_marks_upload.py")
 
 assignment_course = st.selectbox(
     "Course",
@@ -236,7 +240,10 @@ else:
 # ---------- ASSIGN FINAL COURSE GRADE ----------
 
 st.subheader("Assign Final Course Grade")
-
+bulk_grade_upload = st.button("Click for bulk grade upload", key="bulk_grade_upload")
+if bulk_grade_upload:
+    st.switch_page("pages/bulk_grade_upload.py")
+    
 selected_course = st.selectbox(
     "Course",
     list(course_options.keys()),

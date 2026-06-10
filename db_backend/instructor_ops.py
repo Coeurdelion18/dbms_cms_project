@@ -133,7 +133,7 @@ def upload_grade(
             grade_id = cursor.lastrowid
 
         conn.commit()
-        return grade_id
+        return grade_id, student_id
 
     except Exception:
         conn.rollback()
@@ -146,6 +146,36 @@ def assign_course_grade(
     grade: str
 ):
     conn = get_connection()
+
+    valid_grades = {
+        "A+",
+        "A",
+        "A-",
+        "B+",
+        "B",
+        "B-",
+        "C+",
+        "C",
+        "C-",
+        "D",
+        "F"
+    }
+
+    grade = grade.strip().upper()
+
+    if grade not in valid_grades:
+        raise ValueError(
+            f"Invalid grade '{grade}'. "
+            f"Valid grades are: {', '.join(sorted(valid_grades))}"
+        )
+
+    validation_query = """
+        SELECT enrollment_id
+        FROM enrollments
+        WHERE
+            student_id = %s
+            AND offering_id = %s
+    """
 
     query = """
         INSERT INTO course_grades
@@ -166,6 +196,22 @@ def assign_course_grade(
 
     try:
         with conn.cursor() as cursor:
+
+            cursor.execute(
+                validation_query,
+                (
+                    student_id,
+                    offering_id
+                )
+            )
+
+            row = cursor.fetchone()
+
+            if row is None:
+                raise ValueError(
+                    "Student not enrolled in course offering"
+                )
+
             cursor.execute(
                 query,
                 (

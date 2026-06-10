@@ -41,7 +41,9 @@ admin_pages = [
 ]
 
 instructor_pages = [
-    st.Page("pages/instructor_dashboard.py", title="Instructor Dashboard")
+    st.Page("pages/instructor_dashboard.py", title="Instructor Dashboard"),
+    st.Page("pages/bulk_marks_upload.py", title="Bulk Assignment Marks Upload"),
+    st.Page("pages/bulk_grade_upload.py", title="Bulk Grade Upload")
 ]
 
 
