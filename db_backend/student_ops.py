@@ -250,3 +250,46 @@ def get_all_final_grades(student_id: int):
     with conn.cursor(dictionary=True) as cursor:
         cursor.execute(query, (student_id,))
         return cursor.fetchall()
+    
+    
+def upload_assignment_submission(
+    student_id: int,
+    assignment_id: int,
+    filepath: str
+):
+    conn = get_connection()
+
+    query = """
+        INSERT INTO assignment_submissions
+        (
+            student_id,
+            assignment_id,
+            filepath
+        )
+        VALUES
+        (
+            %s,
+            %s,
+            %s
+        )
+        ON DUPLICATE KEY UPDATE
+            filepath = VALUES(filepath)
+    """
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query,
+                (
+                    student_id,
+                    assignment_id,
+                    filepath
+                )
+            )
+
+        conn.commit()
+        return True
+
+    except Exception as e:
+        conn.rollback()
+        raise e

@@ -1,3 +1,4 @@
 Spruce up student dashboard
+Add analytics dashboard
 Add fastapi endpoints
 Add concurrency and waitlist

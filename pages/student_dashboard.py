@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os 
 
 # Block unauthenticated users
 if "user_id" not in st.session_state:
@@ -12,6 +13,7 @@ if st.session_state.role != "student":
 
 import db_backend.student_ops as student_ops
 
+UPLOAD_DIR = "uploads"
 student_id = st.session_state.user_id
 
 # Logout button
@@ -185,10 +187,34 @@ if enrolled_courses:
 
             st.write("Assignments")
 
-            st.dataframe(
-                pd.DataFrame(assignments),
-                use_container_width=True
-            )
+            # st.dataframe(
+            #     pd.DataFrame(assignments),
+            #     use_container_width=True
+            # )
+            assignments_df = pd.DataFrame(assignments)
+            c1, c2, c3, c4 = st.columns([3,2,1,2])
+            c1.write("Title")
+            c2.write("Due Date")
+            c3.write("Max Marks")
+            c4.write("Upload Assignment")
+
+            for idx, row in assignments_df.iterrows():
+                c1, c2, c3, c4 = st.columns([3,2,1,2])
+                c1.write(row["title"])
+                c2.write(row["due_date"])
+                c3.write(row["max_marks"])
+                submission = c4.file_uploader("Upload Submission", key=f"assignment_upload_{idx}")
+                #Add file upload functionality
+
+                if submission is not None:
+                    filename = f"{student_id}_{row['assignment_id']}.pdf"
+                    filepath = os.path.join(UPLOAD_DIR, filename)
+
+                    with open(filepath, 'wb') as f:
+                        f.write(submission.getbuffer())
+                    
+                    st.success(f"Uploaded {submission.name}")
+                    student_ops.upload_assignment_submission(student_id, row['assignment_id'], filepath)
 
         else:
             st.info(

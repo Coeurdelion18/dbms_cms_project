@@ -95,3 +95,13 @@ CREATE TABLE waitlist (
 
 --We need helper functions to display the total marks secured by a student in a course.
 --The total marks will just be the aggregate of all the marks secured in all the assignments for the course.
+
+CREATE TABLE assignment_submissions (
+    submission_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    assignment_id INT NOT NULL,
+    filepath VARCHAR(500) NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(student_id, assignment_id),
+    FOREIGN KEY (assignment_id) REFERENCES assignments(assignment_id)
+);
