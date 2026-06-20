@@ -1,6 +1,5 @@
 import streamlit as st
-from db_backend.auth_ops import create_user
-from db_backend.student_ops import create_student_record
+from api_client import post
 
 if "user_id" in st.session_state:
     st.rerun()
@@ -16,12 +15,13 @@ major = st.text_input("Major")
 if st.button("Sign Up"):
 
     try:
-        result = create_user(email, username, password, role="student")
-        create_student_record(
-            result["user_id"],
-            year,
-            major
-        )
+        result = post("/students/signup", {
+            "email": email,
+            "username": username,
+            "password": password,
+            "year": int(year),
+            "major": major,
+        })
         st.session_state.user_id = result["user_id"]
         st.session_state.role = result["role"]
         st.success("Signup successful")

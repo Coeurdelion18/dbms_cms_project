@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-
-import db_backend.instructor_ops as instructor_ops
+from api_client import delete, get, post
 
 # ---------- ACCESS CONTROL ----------
 
@@ -24,7 +23,7 @@ st.title("Instructor Dashboard")
 
 # ---------- LOAD COURSES ----------
 
-courses = instructor_ops.view_courses(instructor_id)
+courses = get(f"/instructors/{instructor_id}/courses")
 
 if not courses:
     st.info("You are not assigned to any course offerings.")
@@ -62,12 +61,12 @@ with st.form("assignment_form"):
         try:
             offering_id = course_options[selected_course]
 
-            instructor_ops.create_assignment(
-                offering_id,
-                assignment_title,
-                due_date,
-                max_marks
-            )
+            post("/instructors/assignments", {
+                "offering_id": offering_id,
+                "title": assignment_title,
+                "due_date": due_date.isoformat(),
+                "max_marks": int(max_marks),
+            })
 
             st.success("Assignment created")
             st.rerun()
@@ -87,9 +86,7 @@ selected_course = st.selectbox(
 
 offering_id = course_options[selected_course]
 
-course_assignments = instructor_ops.view_course_assignments(
-    offering_id
-)
+course_assignments = get(f"/instructors/offerings/{offering_id}/assignments")
 
 if course_assignments:
     course_delete_df = pd.DataFrame(course_assignments)
@@ -124,9 +121,7 @@ if course_assignments:
                 )
             else:
                 try:
-                    instructor_ops.delete_assignment(
-                        options[selected_label]
-                    )
+                    delete(f"/instructors/assignments/{options[selected_label]}")
 
                     st.success(
                         "Assignment deleted successfully."
@@ -157,14 +152,10 @@ assignment_course = st.selectbox(
 
 offering_id = course_options[assignment_course]
 
-course_assignments = instructor_ops.view_course_assignments(
-    offering_id
-)
+course_assignments = get(f"/instructors/offerings/{offering_id}/assignments")
 
 if course_assignments:
-    students = instructor_ops.view_course_roster(
-        offering_id
-    )
+    students = get(f"/instructors/offerings/{offering_id}/roster")
 
     if not students:
         st.info(
@@ -219,11 +210,11 @@ if course_assignments:
 
             if submitted:
                 try:
-                    instructor_ops.upload_grade(
-                        student_id,
-                        assignment_id,
-                        marks
-                    )
+                    post("/instructors/grades", {
+                        "student_id": student_id,
+                        "assignment_id": assignment_id,
+                        "marks_obtained": int(marks),
+                    })
 
                     st.success(
                         "Grade uploaded successfully."
@@ -252,9 +243,7 @@ selected_course = st.selectbox(
 
 offering_id = course_options[selected_course]
 
-students = instructor_ops.view_course_roster(
-    offering_id
-)
+students = get(f"/instructors/offerings/{offering_id}/roster")
 
 if not students:
     st.info(
@@ -291,11 +280,11 @@ else:
 
         if submitted:
             try:
-                instructor_ops.assign_course_grade(
-                    student_id,
-                    offering_id,
-                    grade
-                )
+                post("/instructors/course-grades", {
+                    "student_id": student_id,
+                    "offering_id": offering_id,
+                    "grade": grade,
+                })
 
                 st.success(
                     "Course grade assigned successfully."

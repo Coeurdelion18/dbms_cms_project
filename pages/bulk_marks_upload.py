@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import db_backend.instructor_ops as instructor_ops
+from api_client import get, post
 
 if "user_id" not in st.session_state:
     st.rerun()
@@ -14,7 +14,7 @@ instructor_id = st.session_state.user_id
 st.title("Upload Assignment Marks in Bulk")
 
 #Select the course
-courses = instructor_ops.view_courses(instructor_id)
+courses = get(f"/instructors/{instructor_id}/courses")
 
 if not courses:
     st.info("You are not assigned to any course offerings.")
@@ -32,7 +32,7 @@ selected_course = st.selectbox("Course", list(course_options.keys()))
 if selected_course:
     offering_id = course_options[selected_course]
 
-    assignment_options = instructor_ops.view_course_assignments(offering_id)
+    assignment_options = get(f"/instructors/offerings/{offering_id}/assignments")
 
     if not assignment_options:
         st.info("No assignments available for this course")
@@ -79,11 +79,12 @@ if selected_course:
                 for _, row in df.iterrows():
 
                     try:
-                        _, s_id = instructor_ops.upload_grade(
-                            student_id=row["student_id"],
-                            assignment_id=a_id,
-                            marks_obtained=row["marks_obtained"]
-                        )
+                        response = post("/instructors/grades", {
+                            "student_id": int(row["student_id"]),
+                            "assignment_id": a_id,
+                            "marks_obtained": int(row["marks_obtained"]),
+                        })
+                        s_id = response["student_id"]
 
                         results.append({
                             "Student ID": s_id,

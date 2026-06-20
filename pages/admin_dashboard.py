@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from api_client import get, post
 
 # ---------- ACCESS CONTROL ----------
 
@@ -9,9 +10,6 @@ if "user_id" not in st.session_state:
 if st.session_state.role != "admin":
     st.error("Access denied")
     st.stop()
-
-import db_backend.admin_ops as admin_ops
-import db_backend.student_ops as student_ops
 
 admin_id = st.session_state.user_id
 
@@ -42,12 +40,12 @@ with st.form("create_instructor_form"):
 
     if submit_instructor:
         try:
-            admin_ops.create_instructor_account(
-                instructor_username, 
-                instructor_email,
-                instructor_password,
-                instructor_name 
-            )
+            post("/admin/instructors", {
+                "user_name": instructor_username,
+                "email": instructor_email,
+                "password": instructor_password,
+                "instructor_name": instructor_name,
+            })
             st.success("Instructor profile created successfully")
             st.rerun()
         
@@ -74,15 +72,15 @@ with st.form("create_student_form"):
 
     if submit_student:
         try:
-            admin_ops.create_student_account(
-                student_name,
-                student_username,
-                student_id, 
-                student_email,
-                student_password,
-                student_year,
-                student_major 
-            )
+            post("/admin/students", {
+                "name": student_name,
+                "user_name": student_username,
+                "student_id": int(student_id),
+                "email": student_email,
+                "password": student_password,
+                "student_year": int(student_year),
+                "major": student_major,
+            })
             st.success("Student profile created successfully")
             st.rerun()
         
@@ -93,7 +91,6 @@ with st.form("create_student_form"):
 
 st.subheader("Create Course")
 with st.form("create_course_form"):
-    instructor = st.text_input("Instructor Name")
     course_code = st.text_input("Course Code")
     title = st.text_input("Course Title")
     credits = st.number_input("Credits", min_value=1, step=1)
@@ -101,7 +98,11 @@ with st.form("create_course_form"):
 
     if submitted:
         try:
-            admin_ops.create_course(instructor, course_code, title, credits)
+            post("/admin/courses", {
+                "course_code": course_code,
+                "title": title,
+                "credits": int(credits),
+            })
             st.success("Course created successfully")
             st.rerun()
 
@@ -113,18 +114,22 @@ with st.form("create_course_form"):
 # VIEW COURSE DETAILS
 
 st.subheader("View Course Details")
-courses = student_ops.view_all_courses()
+courses = get("/admin/offerings")
 if courses:
     course_df = pd.DataFrame(courses)
+    course_options = {
+        f"{row['course_code']} ({row['semester']} {row['offering_year']})": row["offering_id"]
+        for _, row in course_df.iterrows()
+    }
     selected_course_for_details = st.selectbox(
         "Select Course",
-        course_df["course_code"].tolist(),
+        list(course_options.keys()),
         key="course_details_select",
     )
 
     if st.button("Show Details"):
         try:
-            details = admin_ops.get_course_details(selected_course_for_details)
+            details = get(f"/admin/offerings/{course_options[selected_course_for_details]}")
             # Display details in a dataframe for a clean tabular view
             st.dataframe(pd.DataFrame([details]), use_container_width=True)
         except Exception as e:
@@ -139,10 +144,10 @@ else:
 st.subheader("View Course Roster")
 
 if courses:
-    selected_course = st.selectbox("Choose Course", course_df["course_code"].tolist())
+    selected_course = st.selectbox("Choose Course", list(course_options.keys()))
     if st.button("Show Roster"):
         try:
-            roster = admin_ops.view_course_roster(selected_course)
+            roster = get(f"/admin/offerings/{course_options[selected_course]}/roster")
             if roster:
                 st.dataframe(pd.DataFrame(roster), use_container_width=True)
             else:

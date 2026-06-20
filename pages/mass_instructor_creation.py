@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import db_backend.admin_ops as admin_ops
+from api_client import post
 
 # ---------- ACCESS CONTROL ----------
 
@@ -56,12 +56,13 @@ if instructor_file is not None:
         for _, row in df.iterrows():
 
             try:
-                idx = admin_ops.create_instructor_account(
-                    user_name=row["user_name"],
-                    email=row["email"],
-                    password=row["password"],
-                    instructor_name=row["instructor_name"]
-                )
+                response = post("/admin/instructors", {
+                    "user_name": row["user_name"],
+                    "email": row["email"],
+                    "password": row["password"],
+                    "instructor_name": row["instructor_name"],
+                })
+                idx = response["instructor_id"]
 
                 results.append({
                     "Instructor ID": idx,

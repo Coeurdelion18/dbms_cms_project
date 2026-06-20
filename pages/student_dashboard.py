@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import os 
+import os
+from api_client import get, post
 
 # Block unauthenticated users
 if "user_id" not in st.session_state:
@@ -10,8 +11,6 @@ if "user_id" not in st.session_state:
 if st.session_state.role != "student":
     st.error("Access denied")
     st.stop()
-
-import db_backend.student_ops as student_ops
 
 UPLOAD_DIR = "uploads"
 student_id = st.session_state.user_id
@@ -23,7 +22,7 @@ if st.sidebar.button("Logout"):
 
 st.title("Student Dashboard")
 
-student = student_ops.fetch_student_profile(student_id)
+student = get(f"/students/{student_id}")
 
 # Display profile
 st.subheader("Profile")
@@ -41,9 +40,7 @@ with col2:
 # Display enrolled courses
 st.subheader("Enrolled Courses")
 
-enrolled_courses = student_ops.get_enrolled_courses(
-    student_id
-)
+enrolled_courses = get(f"/students/{student_id}/courses")
 
 if enrolled_courses:
     df = pd.DataFrame(enrolled_courses)
@@ -62,7 +59,7 @@ if st.button("Enroll in courses"):
 if st.session_state.show_enroll:
 
     available_courses = (
-        student_ops.view_all_courses()
+        get("/students/courses/all")
     )
 
     if available_courses:
@@ -135,10 +132,10 @@ if st.session_state.show_enroll:
                             ]
                         )
 
-                        student_ops.enroll_in_course(
-                            student_id,
-                            offering_id
-                        )
+                        post("/students/enroll", {
+                            "student_id": student_id,
+                            "offering_id": offering_id,
+                        })
 
                         st.success(
                             "Enrollment successful!"
@@ -177,10 +174,7 @@ if enrolled_courses:
     try:
 
         assignments = (
-            student_ops.get_course_assignments(
-                student_id,
-                offering_id
-            )
+            get(f"/students/{student_id}/assignments/{offering_id}")
         )
 
         if assignments:
@@ -214,7 +208,11 @@ if enrolled_courses:
                         f.write(submission.getbuffer())
                     
                     st.success(f"Uploaded {submission.name}")
-                    student_ops.upload_assignment_submission(student_id, row['assignment_id'], filepath)
+                    post("/students/submit-assignment", {
+                        "student_id": student_id,
+                        "assignment_id": int(row["assignment_id"]),
+                        "filepath": filepath,
+                    })
 
         else:
             st.info(
@@ -250,10 +248,7 @@ if enrolled_courses:
     try:
 
         grades = (
-            student_ops.get_course_submitted_assignments(
-                student_id,
-                offering_id
-            )
+            get(f"/students/{student_id}/submitted-assignments/{offering_id}")
         )
 
         if grades:
@@ -285,9 +280,7 @@ if enrolled_courses:
     try:
 
         grades = (
-            student_ops.get_all_final_grades(
-                student_id
-            )
+            get(f"/students/{student_id}/final-grades")
         )
 
         if grades:

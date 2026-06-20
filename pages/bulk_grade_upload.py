@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-
-import db_backend.instructor_ops as instructor_ops
+from api_client import get, post
 
 # ---------- ACCESS CONTROL ----------
 
@@ -20,9 +19,7 @@ st.title("Upload Final Course Grades in Bulk")
 
 # ---------- COURSE SELECTION ----------
 
-courses = instructor_ops.view_courses(
-    instructor_id
-)
+courses = get(f"/instructors/{instructor_id}/courses")
 
 if not courses:
     st.info(
@@ -113,11 +110,11 @@ if grades_file is not None:
 
             try:
 
-                instructor_ops.assign_course_grade(
-                    student_id=row["student_id"],
-                    offering_id=offering_id,
-                    grade=row["grade"]
-                )
+                post("/instructors/course-grades", {
+                    "student_id": int(row["student_id"]),
+                    "offering_id": offering_id,
+                    "grade": str(row["grade"]),
+                })
 
                 results.append(
                     {

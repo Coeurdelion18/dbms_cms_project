@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import db_backend.admin_ops as admin_ops
+from api_client import post
 
 # ---------- ACCESS CONTROL ----------
 
@@ -45,7 +45,9 @@ if student_file is not None:
     st.dataframe(df)
 
     required = {
+        "name",
         "user_name",
+        "student_id",
         "email",
         "password",
         "student_year",
@@ -71,15 +73,16 @@ if student_file is not None:
 
             try:
 
-                idx = (
-                    admin_ops.create_student_account(
-                        user_name=row["user_name"],
-                        email=row["email"],
-                        password=row["password"],
-                        student_year=row["student_year"],
-                        major=row["major"]
-                    )
-                )
+                response = post("/admin/students", {
+                    "name": row["name"],
+                    "user_name": row["user_name"],
+                    "student_id": int(row["student_id"]),
+                    "email": row["email"],
+                    "password": row["password"],
+                    "student_year": int(row["student_year"]),
+                    "major": row["major"],
+                })
+                idx = response["student_id"]
 
                 results.append(
                     {

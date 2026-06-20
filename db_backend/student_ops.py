@@ -108,6 +108,7 @@ def get_enrolled_courses(student_id: int):
 
     query = """
         SELECT
+            CO.offering_id,
             C.course_code,
             C.title,
             C.credits,
@@ -126,13 +127,14 @@ def get_enrolled_courses(student_id: int):
         return cursor.fetchall()
 
 
-def get_course_assignments(student_id: int, course_code: str):
+def get_course_assignments(student_id: int, offering_id: int):
     # Pending assignments only
 
     conn = get_connection()
 
     query = """
         SELECT
+            A.assignment_id,
             A.title,
             A.due_date,
             A.max_marks
@@ -144,7 +146,7 @@ def get_course_assignments(student_id: int, course_code: str):
         JOIN enrollments E
             ON E.offering_id = CO.offering_id
         WHERE
-            C.course_code = %s
+            CO.offering_id = %s
             AND E.student_id = %s
             AND A.due_date > NOW()
             AND A.assignment_id NOT IN (
@@ -155,7 +157,7 @@ def get_course_assignments(student_id: int, course_code: str):
     """
 
     with conn.cursor(dictionary=True) as cursor:
-        cursor.execute(query, (course_code, student_id, student_id))
+        cursor.execute(query, (offering_id, student_id, student_id))
         return cursor.fetchall()
 
 
@@ -182,7 +184,7 @@ def get_all_grades(student_id: int):
         return cursor.fetchall()
 
 
-def get_course_submitted_assignments(student_id: int, course_code: str):
+def get_course_submitted_assignments(student_id: int, offering_id: int):
     conn = get_connection()
 
     query = """
@@ -199,11 +201,11 @@ def get_course_submitted_assignments(student_id: int, course_code: str):
             ON CO.course_id = C.course_id
         WHERE
             G.student_id = %s
-            AND C.course_code = %s
+            AND CO.offering_id = %s
     """
 
     with conn.cursor(dictionary=True) as cursor:
-        cursor.execute(query, (student_id, course_code))
+        cursor.execute(query, (student_id, offering_id))
         return cursor.fetchall()
 
 
@@ -293,3 +295,18 @@ def upload_assignment_submission(
     except Exception as e:
         conn.rollback()
         raise e
+
+
+def create_student_record(student_id: int, student_name: str, student_year: int, major: str):
+    conn = get_connection()
+    query = """
+        INSERT INTO students(student_id, student_name, student_year, major)
+        VALUES (%s, %s, %s, %s)
+    """
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (student_id, student_name, student_year, major))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
