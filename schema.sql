@@ -18,7 +18,7 @@ CREATE TABLE instructors(
     instructor_id INT AUTO_INCREMENT PRIMARY KEY,
     instructor_name VARCHAR(100),
     FOREIGN KEY (instructor_id) REFERENCES users(user_id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE courses (
     course_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -103,5 +103,6 @@ CREATE TABLE assignment_submissions (
     filepath VARCHAR(500) NOT NULL,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(student_id, assignment_id),
+    FOREIGN KEY (student_id) REFERENCES students(student_id),
     FOREIGN KEY (assignment_id) REFERENCES assignments(assignment_id)
 );

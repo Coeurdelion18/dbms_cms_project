@@ -4,7 +4,7 @@ import os
 from api_client import get, post
 
 # Block unauthenticated users
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 # Block admins accidentally entering
@@ -206,7 +206,7 @@ if enrolled_courses:
 
                     with open(filepath, 'wb') as f:
                         f.write(submission.getbuffer())
-                    
+
                     st.success(f"Uploaded {submission.name}")
                     post("/students/submit-assignment", {
                         "student_id": student_id,

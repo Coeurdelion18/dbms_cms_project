@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from api_client import get, post
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "instructor":
@@ -37,7 +37,7 @@ if selected_course:
     if not assignment_options:
         st.info("No assignments available for this course")
         st.stop()
-    
+
     assignments_df = pd.DataFrame(assignment_options)
     assignments = {
         f"{row['title']} (ID: {row['assignment_id']})":
@@ -71,7 +71,7 @@ if selected_course:
                     )
                 st.error(f"Duplicates in file: {duplicates}")
                 st.stop()
-            
+
             st.dataframe(df)
 
             if st.button("Upload marks"):
@@ -90,11 +90,11 @@ if selected_course:
                             "Student ID": s_id,
                             "Status": "Success"
                         })
-                    
+
                     except Exception as e:
                         results.append({
                             "Student ID": row["student_id"],
                             "Status": f"Failed: {str(e)}"
                         })
-                    
+
                 st.dataframe(pd.DataFrame(results), use_container_width=True)

@@ -12,14 +12,31 @@ class APIError(RuntimeError):
     pass
 
 
+def _auth_headers():
+    try:
+        import streamlit as st
+    except ImportError:
+        return {}
+
+    token = st.session_state.get("access_token")
+    if not token:
+        return {}
+
+    return {"Authorization": f"Bearer {token}"}
+
+
 def request(method, path, **kwargs):
     payload = kwargs.get("json")
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    headers = {
+        "Content-Type": "application/json",
+        **_auth_headers(),
+    }
     http_request = Request(
         f"{API_BASE_URL}{path}",
         data=data,
         method=method,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
     )
 
     try:

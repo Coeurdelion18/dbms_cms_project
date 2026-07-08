@@ -42,7 +42,6 @@ def create_admin_profile(user_name, email, password):
 def create_student_account(
     name,
     user_name,
-    student_id,
     email,
     password,
     student_year,
@@ -85,7 +84,7 @@ def create_student_account(
                 )
             )
 
-            #student_id = cursor.lastrowid
+            student_id = cursor.lastrowid
 
             cursor.execute(
                 student_query,

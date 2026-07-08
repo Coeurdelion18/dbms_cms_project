@@ -1,6 +1,6 @@
 # backend/routes/admin.py
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from db_backend.admin_ops import (
     create_admin_profile,
@@ -24,11 +24,13 @@ from backend.schemas.admin import (
     CourseCreateRequest,
     OfferingCreateRequest,
 )
+from backend.security import require_role
 
 router = APIRouter()
+admin_only = [Depends(require_role("admin"))]
 
 
-@router.post("/admins")
+@router.post("/admins", dependencies=admin_only)
 def create_admin(req: AdminCreateRequest):
     admin_id = create_admin_profile(
         req.user_name,
@@ -42,12 +44,11 @@ def create_admin(req: AdminCreateRequest):
     }
 
 
-@router.post("/students")
+@router.post("/students", dependencies=admin_only)
 def create_student(req: StudentCreateRequest):
     student_id = create_student_account(
         req.name,
         req.user_name,
-        req.student_id,
         req.email,
         req.password,
         req.student_year,
@@ -60,7 +61,7 @@ def create_student(req: StudentCreateRequest):
     }
 
 
-@router.post("/instructors")
+@router.post("/instructors", dependencies=admin_only)
 def create_instructor(req: InstructorCreateRequest):
     instructor_id = create_instructor_account(
         req.user_name,
@@ -75,7 +76,7 @@ def create_instructor(req: InstructorCreateRequest):
     }
 
 
-@router.post("/courses")
+@router.post("/courses", dependencies=admin_only)
 def add_course(req: CourseCreateRequest):
     course_id = create_course(
         req.course_code,
@@ -89,7 +90,7 @@ def add_course(req: CourseCreateRequest):
     }
 
 
-@router.post("/offerings")
+@router.post("/offerings", dependencies=admin_only)
 def add_offering(req: OfferingCreateRequest):
     offering_id = create_course_offering(
         req.instructor_id,
@@ -105,32 +106,32 @@ def add_offering(req: OfferingCreateRequest):
     }
 
 
-@router.get("/students")
+@router.get("/students", dependencies=admin_only)
 def get_students():
     return view_all_students()
 
 
-@router.get("/instructors")
+@router.get("/instructors", dependencies=admin_only)
 def get_instructors():
     return view_all_instructors()
 
 
-@router.get("/courses")
+@router.get("/courses", dependencies=admin_only)
 def get_courses():
     return view_all_courses()
 
 
-@router.get("/offerings")
+@router.get("/offerings", dependencies=admin_only)
 def get_offerings():
     return view_all_course_offerings()
 
 
-@router.get("/assignments")
+@router.get("/assignments", dependencies=admin_only)
 def get_assignments():
     return view_all_assignments()
 
 
-@router.get("/offerings/{offering_id}")
+@router.get("/offerings/{offering_id}", dependencies=admin_only)
 def get_offering_details(offering_id: int):
     try:
         return get_course_details(offering_id)
@@ -139,11 +140,11 @@ def get_offering_details(offering_id: int):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/offerings/{offering_id}/roster")
+@router.get("/offerings/{offering_id}/roster", dependencies=admin_only)
 def get_roster(offering_id: int):
     return view_course_roster(offering_id)
 
 
-@router.get("/offerings/{offering_id}/assignments")
+@router.get("/offerings/{offering_id}/assignments", dependencies=admin_only)
 def get_assignments_for_course(offering_id: int):
     return view_course_assignments(offering_id)

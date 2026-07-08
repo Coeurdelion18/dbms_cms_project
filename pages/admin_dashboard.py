@@ -4,7 +4,7 @@ from api_client import get, post
 
 # ---------- ACCESS CONTROL ----------
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "admin":
@@ -48,7 +48,7 @@ with st.form("create_instructor_form"):
             })
             st.success("Instructor profile created successfully")
             st.rerun()
-        
+
         except Exception as e:
             st.error(str(e))
 
@@ -62,7 +62,6 @@ if mass_student_button:
 
 with st.form("create_student_form"):
     student_name = st.text_input("Student Name")
-    student_id = st.text_input("Student ID")
     student_year = st.number_input("Student Year of Entry", step=1)
     student_major = st.text_input("Student Major")
     student_username = st.text_input("Student Username")
@@ -75,7 +74,6 @@ with st.form("create_student_form"):
             post("/admin/students", {
                 "name": student_name,
                 "user_name": student_username,
-                "student_id": int(student_id),
                 "email": student_email,
                 "password": student_password,
                 "student_year": int(student_year),
@@ -83,7 +81,7 @@ with st.form("create_student_form"):
             })
             st.success("Student profile created successfully")
             st.rerun()
-        
+
         except Exception as e:
             st.error(str(e))
 

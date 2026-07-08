@@ -9,7 +9,6 @@ class AdminCreateRequest(BaseModel):
 class StudentCreateRequest(BaseModel):
     name: str
     user_name: str
-    student_id: int
     email: str
     password: str
     student_year: int

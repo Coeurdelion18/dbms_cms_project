@@ -4,7 +4,7 @@ from api_client import post
 
 # ---------- ACCESS CONTROL ----------
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "admin":
@@ -47,7 +47,6 @@ if student_file is not None:
     required = {
         "name",
         "user_name",
-        "student_id",
         "email",
         "password",
         "student_year",
@@ -76,7 +75,6 @@ if student_file is not None:
                 response = post("/admin/students", {
                     "name": row["name"],
                     "user_name": row["user_name"],
-                    "student_id": int(row["student_id"]),
                     "email": row["email"],
                     "password": row["password"],
                     "student_year": int(row["student_year"]),

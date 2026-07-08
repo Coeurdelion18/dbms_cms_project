@@ -1,6 +1,6 @@
 # backend/routes/students.py
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from db_backend.student_ops import (
     fetch_student_profile,
@@ -25,6 +25,7 @@ from backend.schemas.student import (
     EnrollmentRequest,
     StudentSignupRequest,
 )
+from backend.security import create_access_token, require_role, require_same_user
 
 
 @router.post("/signup")
@@ -34,16 +35,22 @@ def signup_student(req: StudentSignupRequest):
         raise HTTPException(status_code=400, detail="Email may already exist")
 
     create_student_record(result["user_id"], req.username, req.year, req.major)
+    result["access_token"] = create_access_token(result["user_id"], result["role"])
+    result["token_type"] = "bearer"
     return result
 
 
-@router.get("/courses/all")
+@router.get("/courses/all", dependencies=[Depends(require_role("student"))])
 def get_all_courses():
     return view_all_courses()
 
 
 @router.get("/{student_id}")
-def get_student_profile(student_id: int):
+def get_student_profile(
+    student_id: int,
+    current_user=Depends(require_role("student"))
+):
+    require_same_user(student_id, current_user)
     student = fetch_student_profile(student_id)
 
     if not student:
@@ -56,25 +63,39 @@ def get_student_profile(student_id: int):
 
 
 @router.get("/{student_id}/courses")
-def get_student_courses(student_id: int):
+def get_student_courses(
+    student_id: int,
+    current_user=Depends(require_role("student"))
+):
+    require_same_user(student_id, current_user)
     return get_enrolled_courses(student_id)
 
 
 @router.get("/{student_id}/grades")
-def get_student_grades(student_id: int):
+def get_student_grades(
+    student_id: int,
+    current_user=Depends(require_role("student"))
+):
+    require_same_user(student_id, current_user)
     return get_all_grades(student_id)
 
 
 @router.get("/{student_id}/final-grades")
-def get_student_final_grades(student_id: int):
+def get_student_final_grades(
+    student_id: int,
+    current_user=Depends(require_role("student"))
+):
+    require_same_user(student_id, current_user)
     return get_all_final_grades(student_id)
 
 
 @router.get("/{student_id}/course-grades/{offering_id}")
 def get_course_grades(
     student_id: int,
-    offering_id: int
+    offering_id: int,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(student_id, current_user)
     return view_course_grades(
         student_id,
         offering_id
@@ -84,8 +105,10 @@ def get_course_grades(
 @router.get("/{student_id}/total-marks/{course_code}")
 def get_marks(
     student_id: int,
-    course_code: str
+    course_code: str,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(student_id, current_user)
     return {
         "student_id": student_id,
         "course_code": course_code,
@@ -99,8 +122,10 @@ def get_marks(
 @router.get("/{student_id}/assignments/{offering_id}")
 def get_pending_assignments(
     student_id: int,
-    offering_id: int
+    offering_id: int,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(student_id, current_user)
     return get_course_assignments(
         student_id,
         offering_id
@@ -108,12 +133,14 @@ def get_pending_assignments(
 
 
 @router.get(
-    "/{student_id}/submitted-assignments/{offering_id}"
+    "/{student_id}/submitted-assignments/{offering_id}",
 )
 def get_submitted_assignments(
     student_id: int,
-    offering_id: int
+    offering_id: int,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(student_id, current_user)
     return get_course_submitted_assignments(
         student_id,
         offering_id
@@ -122,8 +149,10 @@ def get_submitted_assignments(
 
 @router.post("/enroll")
 def enroll_student(
-    req: EnrollmentRequest
+    req: EnrollmentRequest,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(req.student_id, current_user)
     enrollment_id = enroll_in_course(
         req.student_id,
         req.offering_id
@@ -137,8 +166,10 @@ def enroll_student(
 
 @router.post("/submit-assignment")
 def submit_assignment(
-    req: SubmissionRequest
+    req: SubmissionRequest,
+    current_user=Depends(require_role("student"))
 ):
+    require_same_user(req.student_id, current_user)
     upload_assignment_submission(
         req.student_id,
         req.assignment_id,

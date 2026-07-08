@@ -4,7 +4,7 @@ from api_client import post
 
 # ---------- ACCESS CONTROL ----------
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "admin":
@@ -43,7 +43,7 @@ if instructor_file is not None:
         "email",
         "password"
     }
-    
+
     missing = required - set(df.columns)
     if missing:
         st.error(f"Missing columns: {missing}")

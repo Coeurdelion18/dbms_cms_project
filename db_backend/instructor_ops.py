@@ -22,6 +22,54 @@ def view_courses(instructor_id):
         return cursor.fetchall()
 
 
+def instructor_owns_offering(instructor_id: int, offering_id: int):
+    conn = get_connection()
+
+    query = """
+        SELECT offering_id
+        FROM course_offerings
+        WHERE
+            instructor_id = %s
+            AND offering_id = %s
+    """
+
+    with conn.cursor() as cursor:
+        cursor.execute(
+            query,
+            (
+                instructor_id,
+                offering_id
+            )
+        )
+
+        return cursor.fetchone() is not None
+
+
+def instructor_owns_assignment(instructor_id: int, assignment_id: int):
+    conn = get_connection()
+
+    query = """
+        SELECT A.assignment_id
+        FROM assignments A
+        JOIN course_offerings CO
+            ON A.offering_id = CO.offering_id
+        WHERE
+            CO.instructor_id = %s
+            AND A.assignment_id = %s
+    """
+
+    with conn.cursor() as cursor:
+        cursor.execute(
+            query,
+            (
+                instructor_id,
+                assignment_id
+            )
+        )
+
+        return cursor.fetchone() is not None
+
+
 def create_assignment(
     offering_id: int,
     title: str,

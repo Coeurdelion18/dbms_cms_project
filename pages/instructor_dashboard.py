@@ -4,7 +4,7 @@ from api_client import delete, get, post
 
 # ---------- ACCESS CONTROL ----------
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "instructor":
@@ -234,7 +234,7 @@ st.subheader("Assign Final Course Grade")
 bulk_grade_upload = st.button("Click for bulk grade upload", key="bulk_grade_upload")
 if bulk_grade_upload:
     st.switch_page("pages/bulk_grade_upload.py")
-    
+
 selected_course = st.selectbox(
     "Course",
     list(course_options.keys()),

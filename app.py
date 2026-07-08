@@ -1,5 +1,9 @@
 import streamlit as st
-from db_backend.auth_ops import authenticate_user
+from api_client import APIError, post
+
+if "user_id" in st.session_state and "access_token" not in st.session_state:
+    st.session_state.clear()
+    st.rerun()
 
 if "user_id" not in st.session_state:
     st.title("Course Management Login")
@@ -8,15 +12,19 @@ if "user_id" not in st.session_state:
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Login"):
-            result = authenticate_user(email, password)
+            try:
+                result = post("/auth/login", {
+                    "email": email,
+                    "password": password,
+                })
 
-            if result:
                 st.session_state.user_id = result["user_id"]
                 st.session_state.role = result["role"]
+                st.session_state.access_token = result["access_token"]
                 st.success("Login successful")
                 st.rerun()
 
-            else:
+            except APIError:
                 st.error("Invalid credentials")
     # with col2:
     #     if st.button("Sign Up"):

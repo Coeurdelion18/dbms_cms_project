@@ -4,7 +4,7 @@ from api_client import get, post
 
 # ---------- ACCESS CONTROL ----------
 
-if "user_id" not in st.session_state:
+if "user_id" not in st.session_state or "access_token" not in st.session_state:
     st.rerun()
 
 if st.session_state.role != "instructor":

@@ -24,6 +24,7 @@ if st.button("Sign Up"):
         })
         st.session_state.user_id = result["user_id"]
         st.session_state.role = result["role"]
+        st.session_state.access_token = result["access_token"]
         st.success("Signup successful")
         st.rerun()
 
